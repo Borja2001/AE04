@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <title>Recetas</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+      // busca receptes en una api externa
+      function buscarRecetaExterna() {
+        const nombre = document.getElementById("nombre").value;
+        if (nombre.trim() === "") {
+          alert("Por favor, ingresa un nombre antes de buscar.");
+          return;
+        }
+
+        const apiUrl = "https://www.themealdb.com/api/json/v1/1/search.php?s="+nombre;
+
+        try {
+          axios
+            .get(apiUrl)
+            .then((response) => {
+              mostrarResultados(response.data);
+            })
+            .catch((error) => {
+              alert("Error al realizar la solicitud:", error.response);
+            });
+        } catch (error) {
+          alert("Error en la función buscarReceta:", error.message);
+        }
+      }
+
+      // busca receptes en una api propia
+      function buscarRecetaInterna() {
+        const nombre = document.getElementById("nombre").value;
+        if (nombre.trim() === "") {
+          alert("Por favor, ingresa un nombre antes de buscar.");
+          return;
+        }
+
+        const apiUrl = "Servidor.php"+nombre;
+
+        try {
+          $.ajax({
+          type: "GET",
+          url: "Servidor.php",
+          data: { valor: nombre }, // dades a enviar (p.ex. {valor:’1234’, nom:’pepe’})
+          success: function (response) {
+            console.log(response)
+            let json=JSON.parse(response);
+            
+            mostrarResultados(json);
+          },
+          error: function () {
+            alert("Error");
+          },
+        });
+        } catch (error) {
+          alert("Error en la función buscarReceta:", error.message);
+        }
+      }
+
+      //Guarda les dades necesaries en la api propia
+      function guardarLocal(datos) {
+        $.ajax({
+          type: "POST",
+          url: "Servidor.php",
+          data: { valor: JSON.stringify(datos) }, // dades a enviar (p.ex. {valor:’1234’, nom:’pepe’})
+          success: function (response) {
+            alert(response);
+          },
+          error: function () {
+            alert("Error");
+          },
+        });
+      }
+
+      //Crea les tarjetes necesaries per a visualitzar tots el components necesaris
+      function mostrarResultados(resultados) {
+        const areaResultados = document.getElementById("resultados");
+        areaResultados.innerHTML = "";
+
+        if (resultados.meals === null) {
+          areaResultados.innerHTML = "<p>No se encontraron resultados.</p>";
+        } else {
+          resultados.meals.forEach((meal) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const img = document.createElement("img");
+            img.src = meal.strMealThumb;
+            card.appendChild(img);
+
+            const title = document.createElement("h2");
+            title.textContent = meal.strMeal;
+            card.appendChild(title);
+
+            const instructionsLayer = document.createElement("div");
+            instructionsLayer.className = "instructions-layer";
+            instructionsLayer.textContent = meal.strInstructions;
+            //card.appendChild(instructionsLayer);
+            const instructionsTitle = document.createElement("h3");
+            instructionsTitle.textContent = "Instruciones:";
+            card.appendChild(instructionsTitle);
+
+            const instructionsView = document.createElement("p");
+            instructionsView.textContent = "View Instructions >>";
+            card.appendChild(instructionsView);
+
+            const ingredientsTitle = document.createElement("h3");
+            ingredientsTitle.textContent = "Ingredientes:";
+            card.appendChild(ingredientsTitle);
+
+            const ingredientsList = document.createElement("ul");
+            for (let i = 1; i <= 20; i++) {
+              const ingredient = meal[`strIngredient${i}`];
+              const measure = meal[`strMeasure${i}`];
+              if (ingredient && measure) {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${measure} ${ingredient}`;
+                ingredientsList.appendChild(listItem);
+              }
+            }
+
+            card.appendChild(ingredientsList);
+
+            const buttonSave = document.createElement("button");
+            buttonSave.textContent = "Guardar Receta";
+            buttonSave.className = "buttonSave";
+            buttonSave.onclick = function () {
+              guardarLocal(meal);
+            };
+            card.appendChild(buttonSave);
+            instructionsView.onmouseover = function () {
+              instructionsLayer.style.display = "block";
+            };
+            instructionsView.onmouseout = function () {
+              instructionsLayer.style.display = "none";
+            };
+            areaResultados.appendChild(card);
+            areaResultados.appendChild(instructionsLayer);
+          });
+        }
+      }
+    </script>
+
+    <style>
+      body {
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+      }
+      .instructions-layer {
+        display: none;
+
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #fff;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        padding: 10px;
+        z-index: 1;
+        color: #666;
+      }
+      .capçalera {
+        background-color: #222;
+        color: #cdc7c7;
+        height: 20vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .buttonSave {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+      }
+
+      #resultados {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+      }
+
+      .card {
+        position: relative;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+        padding: 20px;
+        width: 300px;
+        text-align: left;
+      }
+
+      img {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 10px;
+      }
+
+      h2 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        color: #555;
+        margin-top: 10px;
+      }
+
+      p {
+        color: #666;
+        margin-bottom: 10px;
+      }
+
+      ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      li {
+        color: #888;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="capçalera">
+      <h1>Recetas</h1>
+    </div>
+
+    <label for="nombre">Buscar receta:</label>
+    <input
+      type="text"
+      id="nombre"
+      placeholder="Escribe el nombre de la receta"
+    />
+    <button onclick="buscarRecetaExterna()">Busqueda Externa</button>
+    <button onclick="buscarRecetaInterna()">Busqueda Interna</button>
+
+    <div id="resultados"></div>
+  </body>
+</html>
